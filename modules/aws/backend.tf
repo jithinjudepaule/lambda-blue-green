@@ -1,6 +1,6 @@
 
 resource "aws_s3_bucket" "backend_s3_bucket"{
-    bucket="tf-backend-bucket-1988-new"
+    bucket="the bucket name"
     lifecycle{
         prevent_destroy=false
     }
@@ -31,7 +31,7 @@ resource "aws_s3_bucket_public_access_block" "backend_s3_bucket" {
 }
 
 resource "aws_dynamodb_table" "backend-terraform-lock" {
-    name           = "terraform_state"
+    name           = "dynamodb_table_name"
     billing_mode = "PAY_PER_REQUEST"
     hash_key       = "LockID"
     attribute {
