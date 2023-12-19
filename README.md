@@ -1,4 +1,4 @@
-# Lambda Blue Green Deployments 
+# Lambda Blue Green Deployment
 
 This repository contains Terraform code to deploy an AWS Lambda function with an alias, set up routing configuration for the alias, and obtain the Lambda URL.
 
