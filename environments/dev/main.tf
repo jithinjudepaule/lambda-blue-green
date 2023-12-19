@@ -24,40 +24,35 @@ data "archive_file" "lambda" {
   output_path = "lambda_function_payload.zip"
 }
 
-resource "aws_lambda_function" "test_lambda" {
-  # If the file is not in the current working directory you will need to include a
-  # path.module in the filename.
+resource "aws_lambda_function" "blue_green_lambda" {
   filename      = "lambda_function_payload.zip"
-  function_name = "lambda_blue_green_deployment"
+  function_name = "blue_green_deployment_function"
   role          = aws_iam_role.iam_for_lambda.arn
   handler       = "lambda.handler"
   publish       = true
 
   source_code_hash = data.archive_file.lambda.output_base64sha256
-
   runtime = "nodejs20.x"
-
-
 }
 
-resource "aws_lambda_alias" "test_lambda_prod_alias" {
+resource "aws_lambda_alias" "blue_green_lambda_prod_alias" {
   name             = "prod"
   description      = "the prod alias"
-  function_name    = aws_lambda_function.test_lambda.arn
-  function_version = "1"
+  function_name    = aws_lambda_function.blue_green_lambda.arn
+  function_version = "2"
 
   routing_config {
     additional_version_weights = {
-      "2" = 0.5
+      "1" = 0.0
     }
   }
   depends_on = [
-    aws_lambda_function.test_lambda
+    aws_lambda_function.blue_green_lambda
   ]
 }
 
-resource "aws_lambda_function_url" "test_lambda_url" {
-  function_name      = aws_lambda_function.test_lambda.function_name
+resource "aws_lambda_function_url" "blue_green_lambda_url" {
+  function_name      = aws_lambda_function.blue_green_lambda.function_name
   qualifier          = "prod"
   authorization_type = "NONE"
 
@@ -70,7 +65,7 @@ resource "aws_lambda_function_url" "test_lambda_url" {
     max_age           = 86400
   }
   depends_on = [
-    aws_lambda_function.test_lambda, aws_lambda_alias.test_lambda_prod_alias
+    aws_lambda_function.blue_green_lambda, aws_lambda_alias.blue_green_lambda_prod_alias
   ]
 }
 
