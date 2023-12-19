@@ -32,7 +32,7 @@ resource "aws_lambda_function" "blue_green_lambda" {
   publish       = true
 
   source_code_hash = data.archive_file.lambda.output_base64sha256
-  runtime = "nodejs20.x"
+  runtime          = "nodejs20.x"
 }
 
 resource "aws_lambda_alias" "blue_green_lambda_prod_alias" {
