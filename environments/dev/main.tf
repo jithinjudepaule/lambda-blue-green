@@ -1,4 +1,10 @@
-
+resource "aws_cloudwatch_log_group" "function_log_group" {
+  name              = "/aws/lambda/${aws_lambda_function.blue_green_lambda.function_name}"
+  retention_in_days = 7
+  lifecycle {
+    prevent_destroy = false
+  }
+}
 
 data "aws_iam_policy_document" "assume_role" {
   statement {
@@ -24,6 +30,27 @@ data "archive_file" "lambda" {
   output_path = "lambda_function_payload.zip"
 }
 
+resource "aws_iam_policy" "function_logging_policy" {
+  name   = "function-logging-policy"
+  policy = jsonencode({
+    "Version" : "2012-10-17",
+    "Statement" : [
+      {
+        Action : [
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ],
+        Effect : "Allow",
+        Resource : "arn:aws:logs:*:*:*"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "function_logging_policy_attachment" {
+  role = aws_iam_role.iam_for_lambda.id
+  policy_arn = aws_iam_policy.function_logging_policy.arn
+}
 resource "aws_lambda_function" "blue_green_lambda" {
   filename      = "lambda_function_payload.zip"
   function_name = "blue_green_deployment_function"
@@ -39,11 +66,11 @@ resource "aws_lambda_alias" "blue_green_lambda_prod_alias" {
   name             = "prod"
   description      = "the prod alias"
   function_name    = aws_lambda_function.blue_green_lambda.arn
-  function_version = "2"
+  function_version = "6"
 
   routing_config {
     additional_version_weights = {
-      "1" = 0.0
+      "5" = 0
     }
   }
   depends_on = [
@@ -69,3 +96,13 @@ resource "aws_lambda_function_url" "blue_green_lambda_url" {
   ]
 }
 
+resource "aws_lambda_permission" "apigw" {
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = "${aws_lambda_function.blue_green_lambda.function_name}"
+  principal     = "apigateway.amazonaws.com"
+
+  # The /*/* portion grants access from any method on any resource
+  # within the API Gateway "REST API".
+  source_arn = "${aws_api_gateway_rest_api.api.execution_arn}/*/*"
+}
